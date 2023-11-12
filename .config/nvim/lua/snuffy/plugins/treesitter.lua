@@ -12,6 +12,7 @@
                 },
                 indent = { enable = true },
                 ensure_installed = {
+                    "bash",
                     "c",
                     "c_sharp",
                     "cmake",
