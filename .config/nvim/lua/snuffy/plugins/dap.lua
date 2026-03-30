@@ -3,11 +3,14 @@ return {
     dependencies = {
         "theHamsta/nvim-dap-virtual-text",
         "rcarriga/nvim-dap-ui",
+        "nvim-neotest/nvim-nio",
+        "mfussenegger/nvim-dap-python"
     },
     config = function()
         local dap = require("dap")
         local dapui = require("dapui")
         local dap_virtual_text = require("nvim-dap-virtual-text")
+        local dap_python = require("dap-python")
 
         dap_virtual_text.setup({
             virtual_text = {
@@ -90,48 +93,25 @@ return {
             windows = {indent = 1},
         })
 
+        local python_path = table.concat({ vim.fn.stdpath('data'),  'mason', 'packages', 'debugpy', 'venv', 'bin', 'python'}, '/'):gsub('//+', '/')
+        dap_python.setup(python_path)
 
-        dap.adapters.node2 = {
+        local netcoredbg_path = table.concat({ vim.fn.stdpath("data"), "mason", "packages", "netcoredbg", "netcoredbg"}, "/"):gsub("//+", "/")
+        dap.adapters.coreclr = {
             type = "executable",
-            command = "node",
-            args = {os.getenv("HOME") .. "/.local/share/nvim/dapinstall/jsnode_dbg/vscode-node-debug2/out/src/nodeDebug.js"},
-        }
-        dap.configurations.javascript = {
+            command = netcoredbg_path,
+            args = {"--interpreter=vscode"}
+        } 
+
+        dap.configurations.cs = {
             {
-                type = "node2",
+                type = "coreclr",
+                name = "launch - netcoredbg",
                 request = "launch",
-                program = "${file}",
-                cwd = vim.fn.getcwd(),
-                sourceMaps = true,
-                protocol = "inspector",
-                console = "integratedTerminal",
-            },
-        }
-        dap.adapters.python = {
-            type = "executable",
-            command = "python",
-            args = {"-m", "debugpy.adapter"},
-        }
-        dap.configurations.python = {
-            {
-                type = "python",
-                request = "launch",
-                name = "Launch file",
-                program = "${file}",
-                pythonPath = function()
-                    -- debugpy supports launching an application with a different interpreter then the one used to launch debugpy itself.
-                    -- The code below looks for a `venv` or `.venv` folder in the current directly and uses the python within.
-                    -- You could adapt this - to for example use the `VIRTUAL_ENV` environment variable.
-                    local cwd = vim.fn.getcwd()
-                    if vim.fn.executable(cwd .. "/venv/bin/python") == 1 then
-                        return cwd .. "/venv/bin/python"
-                    elseif vim.fn.executable(cwd .. "/.venv/bin/python") == 1 then
-                        return cwd .. "/.venv/bin/python"
-                    else
-                        return "/usr/bin/python"
-                    end
+                program = function()
+                    return vim.fn.input("path to dll", vim.fn.getcwd() .. "/bin/Debug/", "file")
                 end,
-            },
+            }
         }
     end,
 }
